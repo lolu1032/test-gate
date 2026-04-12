@@ -2,7 +2,7 @@
 # Test Gate installer
 
 HARNESS_DIR="$HOME/.claude/test-harness"
-SKILL_DIR="$HOME/.claude/skills/test-gate"
+SKILL_DIR="$HOME/.claude/skills"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 echo "Installing Test Gate..."
@@ -21,15 +21,19 @@ cp "$SCRIPT_DIR/tauri-mcp.json" "$HARNESS_DIR/"
 chmod +x "$HARNESS_DIR"/*.sh
 echo "  Harness: $HARNESS_DIR"
 
-# Claude Code skill
-mkdir -p "$SKILL_DIR"
-cp "$SCRIPT_DIR/SKILL.md" "$SKILL_DIR/"
-echo "  Skill:   $SKILL_DIR"
+# Claude Code skills
+mkdir -p "$SKILL_DIR/test-web" "$SKILL_DIR/test-tauri" "$SKILL_DIR/test-gate"
+cp "$SCRIPT_DIR/skills/test-web/SKILL.md" "$SKILL_DIR/test-web/"
+cp "$SCRIPT_DIR/skills/test-tauri/SKILL.md" "$SKILL_DIR/test-tauri/"
+cp "$SCRIPT_DIR/skills/test-gate/SKILL.md" "$SKILL_DIR/test-gate/"
+echo "  Skills:  /test-web, /test-tauri, /test-gate"
 
 echo ""
-echo "Done! Usage:"
+echo "Done! Commands:"
 echo ""
-echo "  /test-gate              # Claude Code skill"
-echo "  ~/.claude/test-harness/test-now.sh   # Command line"
+echo "  /test-web     Web app testing (Playwright MCP)"
+echo "  /test-tauri   Tauri desktop testing (Tauri MCP)"
+echo "  /test-gate    Both (auto-detect)"
 echo ""
-echo "Run in any git project with a dev server running."
+echo "Or from command line:"
+echo "  ~/.claude/test-harness/test-now.sh"
