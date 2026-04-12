@@ -5,6 +5,7 @@
 HASH="$1"
 PROJECT_ROOT="$2"
 EXIT_BROWSER="${3:-0}"
+EXIT_TAURI="${4:--1}"  # -1 = not run
 REPORT_DIR="$PROJECT_ROOT/.claude/test-reports"
 FINAL_REPORT="$REPORT_DIR/$HASH-report.md"
 
@@ -32,13 +33,22 @@ FINAL_REPORT="$REPORT_DIR/$HASH-report.md"
         echo "Status: NOT RUN"
     fi
 
-    # Phase 2: Tauri MCP 결과 (나중에 추가)
-    # if [ -f "$REPORT_DIR/$HASH-tauri.md" ]; then
-    #     echo ""
-    #     echo "---"
-    #     echo "## Tauri Tests (Tauri MCP)"
-    #     cat "$REPORT_DIR/$HASH-tauri.md"
-    # fi
+    # Tauri MCP 결과
+    if [ -f "$REPORT_DIR/$HASH-tauri.md" ]; then
+        echo ""
+        echo "---"
+        echo "## Tauri Tests (Tauri MCP)"
+        echo ""
+        if [ "$EXIT_TAURI" -eq 0 ] 2>/dev/null; then
+            echo "Status: COMPLETED"
+        elif [ "$EXIT_TAURI" -eq -1 ] 2>/dev/null; then
+            echo "Status: NOT RUN"
+        else
+            echo "Status: ERROR (exit code $EXIT_TAURI)"
+        fi
+        echo ""
+        cat "$REPORT_DIR/$HASH-tauri.md"
+    fi
 
 } > "$FINAL_REPORT"
 
@@ -56,8 +66,18 @@ else
     RESULT="PASS"
 fi
 
-PASS_COUNT=$(grep -c "\[PASS\]" "$REPORT_DIR/$HASH-browser.md" 2>/dev/null || echo "0")
-FAIL_COUNT=$(grep -c "\[FAIL\]" "$REPORT_DIR/$HASH-browser.md" 2>/dev/null || echo "0")
+# Summary 라인에서 숫자 추출 시도, 없으면 grep으로 카운트
+PASS_COUNT=$(grep -oE 'Pass: ([0-9]+)' "$REPORT_DIR/$HASH-browser.md" 2>/dev/null | grep -oE '[0-9]+' | head -1)
+FAIL_COUNT=$(grep -oE 'Fail: ([0-9]+)' "$REPORT_DIR/$HASH-browser.md" 2>/dev/null | grep -oE '[0-9]+' | head -1)
+# Summary 라인이 없으면 [PASS]/[FAIL] 카운트로 폴백
+if [ -z "$PASS_COUNT" ]; then
+    PASS_COUNT=$(grep -c '\[PASS\]' "$REPORT_DIR/$HASH-browser.md" 2>/dev/null)
+    [ -z "$PASS_COUNT" ] && PASS_COUNT=0
+fi
+if [ -z "$FAIL_COUNT" ]; then
+    FAIL_COUNT=$(grep -c '\[FAIL\]' "$REPORT_DIR/$HASH-browser.md" 2>/dev/null)
+    [ -z "$FAIL_COUNT" ] && FAIL_COUNT=0
+fi
 SHORT_HASH="${HASH:0:8}"
 COMMIT_MSG=$(git -C "$PROJECT_ROOT" log -1 --format='%s' 2>/dev/null || echo "unknown")
 DATE=$(date '+%Y-%m-%d %H:%M')

@@ -71,8 +71,44 @@ if [ $EXIT_CODE -ne 0 ]; then
     } > "$REPORT_DIR/$HASH-browser.md"
 fi
 
+# Tauri MCP 테스트 (Tauri 프로젝트인 경우에만)
+EXIT_TAURI=-1
+if [ -f "$PROJECT_ROOT/src-tauri/tauri.conf.json" ] || [ -f "$PROJECT_ROOT/src-tauri/Cargo.toml" ]; then
+    TAURI_PROMPT_FILE="$PROJECT_ROOT/.claude/tauri-test-scenarios.md"
+    if [ ! -f "$TAURI_PROMPT_FILE" ]; then
+        TAURI_PROMPT_FILE="$HARNESS_DIR/tauri-test-prompt.md"
+    fi
+
+    TAURI_PROMPT=$(cat "$TAURI_PROMPT_FILE")
+
+    claude --print \
+        -p "$COMMIT_INFO
+$HISTORY_CONTEXT
+
+$TAURI_PROMPT" \
+        --mcp-config "$HARNESS_DIR/tauri-mcp.json" \
+        --allowedTools "mcp__tauri__*,Read,Glob,Grep" \
+        --model claude-haiku-4-5-20251001 \
+        > "$REPORT_DIR/$HASH-tauri.md" 2>"$HARNESS_DIR/.last-tauri-test.log"
+
+    EXIT_TAURI=$?
+
+    if [ $EXIT_TAURI -ne 0 ]; then
+        {
+            echo "# Tauri Test Report: $HASH"
+            echo "Date: $(date)"
+            echo ""
+            echo "## ERROR"
+            echo "claude --print exited with code $EXIT_TAURI"
+            echo ""
+            echo "### stderr"
+            cat "$HARNESS_DIR/.last-tauri-test.log"
+        } > "$REPORT_DIR/$HASH-tauri.md"
+    fi
+fi
+
 # 합산 리포트 생성
-"$HARNESS_DIR/merge-reports.sh" "$HASH" "$PROJECT_ROOT" "$EXIT_CODE"
+"$HARNESS_DIR/merge-reports.sh" "$HASH" "$PROJECT_ROOT" "$EXIT_CODE" "$EXIT_TAURI"
 
 # Lock 해제
 rm -f "$LOCK_FILE"
