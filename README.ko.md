@@ -1,6 +1,6 @@
 # Test Gate
 
-> Claude Code용 AI 에이전트 QA 격리 하네스 — 브라우저 + Tauri 데스크톱 테스트
+> Claude Code용 AI 에이전트 QA 격리 하네스 — 웹 + 데스크톱 + 코드 리뷰
 
 **[English](README.md)**
 
@@ -8,8 +8,40 @@ AI 코딩 에이전트가 같은 세션에서 자기 코드를 테스트하면 "
 Test Gate는 **완전히 별도의 세션**에서 테스트를 돌려서 이 문제를 구조적으로 해결합니다.
 
 - **웹앱**: `/test-web` — Playwright MCP
-- **Tauri 데스크톱앱**: `/test-tauri` — Tauri MCP
-- **둘 다**: `/test-gate` — 자동 감지
+- **데스크톱앱**: `/test-desktop` — Tauri MCP (현재)
+- **코드 리뷰**: `/test-review` — git diff 분석
+- **라우터**: `/test-gate` — 표면 감지 + 위임
+
+## 동작 흐름
+
+```
+[코딩 에이전트 세션]
+    ↓ (/test-gate 또는 표면별 스킬 실행)
+[/test-gate 라우터]
+    ├── 프로젝트의 표면 감지
+    └── 어댑터에 위임:
+[별도 Claude 세션 — Haiku 4.5]
+    ├── /test-web      → Playwright MCP → 페이지 탐색, 클릭, 검증
+    ├── /test-desktop  → Tauri MCP → 윈도우, IPC, 웹뷰
+    └── /test-review   → Read + Grep → git diff 분석
+    ↓
+[리포트 + macOS 알림 + VSCode 자동 열기]
+    ↓
+[사람이 확인 후 수정 결정]
+```
+
+## 아키텍처
+
+Test Gate는 **표면(surface) 기반** 명명을 사용합니다 (프레임워크 기반 X):
+
+| 스킬 | 표면 | 구현 |
+|------|------|------|
+| `/test-web` | 웹앱 (브라우저) | Playwright MCP |
+| `/test-desktop` | 데스크톱 앱 | Tauri MCP |
+| `/test-review` | 코드 diff | Read + Grep + git |
+| `/test-gate` | 라우터 | 감지 + 위임 |
+
+이렇게 하면 Go 웹서버, Java Spring 앱, Next.js 앱, Tauri 앱 모두 같은 스킬로 테스트 가능. 어댑터만 다름.
 
 ## 설치
 
@@ -21,58 +53,47 @@ cd test-gate
 
 설치되는 것:
 - 하네스 스크립트 → `~/.claude/test-harness/`
-- Claude Code 스킬 → `~/.claude/skills/test-web/`, `test-tauri/`, `test-gate/`
-
-### 수동 설치
-
-```bash
-# 하네스
-mkdir -p ~/.claude/test-harness
-cp *.sh *.md *.json ~/.claude/test-harness/
-chmod +x ~/.claude/test-harness/*.sh
-
-# 스킬
-mkdir -p ~/.claude/skills/test-web ~/.claude/skills/test-tauri ~/.claude/skills/test-gate
-cp skills/test-web/SKILL.md ~/.claude/skills/test-web/
-cp skills/test-tauri/SKILL.md ~/.claude/skills/test-tauri/
-cp skills/test-gate/SKILL.md ~/.claude/skills/test-gate/
-```
+- Claude Code 스킬 → `~/.claude/skills/{test-gate, test-web, test-desktop, test-tauri, test-review}/`
 
 ## 사용법
 
-### `/test-web` — 웹앱 테스트
-
-```
-/test-web
-```
-
-localhost에서 실행 중인 웹앱을 Playwright MCP로 테스트합니다.
-
-- `package.json`에서 포트 자동 감지 (`--port 3001` 등)
-- dev 서버 실행 여부 확인
-- 프로젝트별 테스트 시나리오 설정 제안
-- 백그라운드 실행, 완료 시 macOS 알림
-
-### `/test-tauri` — Tauri 데스크톱앱 테스트
-
-```
-/test-tauri
-```
-
-Tauri 데스크톱앱을 Tauri MCP로 테스트합니다.
-
-- `src-tauri/` 디렉토리로 Tauri 프로젝트 자동 감지
-- 네이티브 기능 테스트: 윈도우, 메뉴, 시스템 트레이, IPC
-- 웹뷰 내부 콘텐츠 테스트
-- 웹 + Tauri 동시 실행 옵션
-
-### `/test-gate` — 둘 다 (자동 감지)
+### `/test-gate` — 라우터 (추천)
 
 ```
 /test-gate
 ```
 
-웹 테스트 실행 후, `src-tauri/`가 있으면 Tauri 테스트도 실행.
+프로젝트에 적용 가능한 표면을 감지하고, 여러 개 선택 가능, 각 어댑터에 위임.
+
+### `/test-web` — 웹앱 테스트
+
+localhost(또는 다른 URL)에서 돌아가는 웹앱을 Playwright MCP로 테스트.
+
+- `package.json`에서 포트 자동 감지
+- dev 서버 실행 여부 확인
+- 시나리오는 항상 사용자에게 묻기 — 자동 생성 안 함
+- 백그라운드 실행, 완료 시 macOS 알림
+
+### `/test-desktop` — 데스크톱 테스트
+
+Tauri 데스크톱 앱을 Tauri MCP로 테스트.
+
+- Tauri 프로젝트 자동 감지 (`src-tauri/` 디렉토리)
+- 네이티브 기능 테스트: 윈도우, 메뉴, 시스템 트레이, IPC
+- 웹뷰 내부 콘텐츠 테스트
+
+### `/test-tauri` (deprecated alias)
+
+`/test-desktop`으로 리다이렉트. 호환성 유지용.
+
+### `/test-review` — 코드 리뷰
+
+별도 세션에서 git diff 리뷰.
+
+- base ref 자동 감지 (feature 브랜치면 `origin/main..HEAD`, main이면 `HEAD~1`)
+- 6개 카테고리: 정확성, 보안, 성능, 테스트 커버리지, 코드 품질, 일관성
+- P1/P2/P3 심각도 + 신뢰도 점수
+- 리포트는 `.claude/review-reports/`에 저장 (테스트 리포트와 분리)
 
 ### 명령줄 (스킬 없이)
 
@@ -83,37 +104,36 @@ Tauri 데스크톱앱을 Tauri MCP로 테스트합니다.
 
 ## 결과 확인
 
-| 방법 | 위치 |
+| 위치 | 내용 |
 |------|------|
-| **macOS 알림** | 테스트 완료 시 자동 팝업 |
-| **VSCode** | 리포트 `.md` 파일이 자동으로 열림 |
-| **파일** | `{프로젝트}/.claude/test-reports/{hash}-report.md` |
-| **히스토리** | `{프로젝트}/.claude/test-reports/HISTORY.md` |
-
-### 히스토리 테이블
-
-테스트할 때마다 `HISTORY.md`에 한 줄 추가:
-
-```
-| Date | Commit | Message | Result | Pass | Fail | Report |
-|------|--------|---------|--------|------|------|--------|
-| 2026-04-12 23:10 | a1b2c3d4 | fix: 로그인 폼 | PASS | 11 | 0 | link |
-| 2026-04-12 22:30 | e5f6g7h8 | feat: 대시보드 | FAIL | 8 | 3 | link |
-```
-
-테스트 에이전트는 히스토리를 읽고:
-- 이전 PASS가 FAIL이면 `[REGRESSION]` 표시
-- 커밋 메시지에 `fix:`가 있으면 이전 FAIL 항목 집중 테스트
-- FAIL→PASS 영역을 리그레션 민감 영역으로 분류
+| **macOS 알림** | 테스트 완료 팝업 |
+| **VSCode** | 리포트 `.md` 자동으로 열림 |
+| **테스트 리포트** | `{프로젝트}/.claude/test-reports/{hash}-report.md` |
+| **리뷰 리포트** | `{프로젝트}/.claude/review-reports/{hash}-review.md` |
+| **테스트 히스토리** | `{프로젝트}/.claude/test-reports/HISTORY.md` |
+| **리뷰 히스토리** | `{프로젝트}/.claude/review-reports/HISTORY.md` |
 
 ## 프로젝트별 테스트 시나리오
 
-### 웹 (`/test-web`)
+**표면별 폴더 구조 (권장):**
 
-프로젝트 루트에 `.claude/test-scenarios.md` 생성:
+```
+.claude/test-scenarios/
+├── web/              # /test-web 시나리오
+│   ├── _always.md    # 항상 실행
+│   ├── auth.md       # 기능별
+│   └── posts.md
+└── desktop/          # /test-desktop 시나리오
+    ├── _always.md
+    └── window.md
+```
+
+파일 로드 순서: `_always.md` 먼저, 나머지는 알파벳순.
+
+**예시 `web/_always.md`:**
 
 ```markdown
-# 테스트 시나리오
+# 항상 실행되는 웹 시나리오
 
 ## 로그인
 - URL: http://localhost:3000
@@ -121,31 +141,14 @@ Tauri 데스크톱앱을 Tauri MCP로 테스트합니다.
 
 ## 필수 테스트
 1. 로그인 후 대시보드 로드 확인
-2. /posts 페이지에서 목록 확인
-3. /posts/new 에서 폼 제출 테스트
-4. 768px, 375px 반응형 확인
+2. 모든 페이지에서 사이드바 네비게이션 동작 확인
 ```
 
-### Tauri (`/test-tauri`)
-
-`.claude/tauri-test-scenarios.md` 생성:
-
-```markdown
-# Tauri 테스트 시나리오
-
-## 앱 실행
-1. 윈도우가 올바른 타이틀로 열리는지
-2. 윈도우 크기가 설정과 일치하는지
-
-## 네이티브 기능
-1. 시스템 트레이 아이콘 표시
-2. 메뉴바 항목 동작
-3. 파일 열기 다이얼로그
-
-## 웹뷰
-1. 메인 페이지 렌더링
-2. IPC 통신 (Rust ↔ Frontend)
-```
+**하위 호환성:** 구 경로도 자동 폴백:
+- `.claude/test-scenarios/` (단일 폴더, web으로 처리)
+- `.claude/test-scenarios.md` (단일 파일, web)
+- `.claude/tauri-test-scenarios/` (폴더, desktop)
+- `.claude/tauri-test-scenarios.md` (단일 파일, desktop)
 
 ## 자동 모드 (선택)
 
@@ -169,46 +172,60 @@ Tauri 데스크톱앱을 Tauri MCP로 테스트합니다.
 }
 ```
 
-커밋 메시지에 `[skip-test]`를 넣으면 스킵.
+커밋 메시지에 `[skip-test]` 넣으면 스킵.
+
+## 히스토리 기반 테스트
+
+HISTORY.md를 읽고 활용:
+
+- **리그레션 감지** — 이전 PASS가 FAIL이면 `[REGRESSION]` 표시
+- **수정 검증** — 커밋 메시지에 `fix:`가 있으면 이전 FAIL 항목 집중
+- **패턴 인식** — FAIL→PASS 영역을 리그레션 민감 영역으로 분류
 
 ## 파일 구조
 
 ```
 ~/.claude/test-harness/          # 하네스 (글로벌 설치)
-├── test-now.sh                  # 수동 실행 (CLI)
+├── test-now.sh                  # 수동 실행
 ├── check-and-run.sh             # 자동 모드 hook
 ├── run-all-tests.sh             # 테스트 러너
-├── merge-reports.sh             # 리포트 합산 + 히스토리
-├── browser-test-prompt.md       # 기본 웹 테스트 프롬프트
+├── run-review.sh                # 코드 리뷰 러너
+├── merge-reports.sh             # 리포트 합산
+├── browser-test-prompt.md       # 기본 웹 프롬프트
 ├── browser-mcp.json             # Playwright MCP 설정
-├── tauri-test-prompt.md         # 기본 Tauri 테스트 프롬프트
+├── tauri-test-prompt.md         # 기본 데스크톱 프롬프트
 ├── tauri-mcp.json               # Tauri MCP 설정
-└── install.sh                   # 설치 스크립트
+└── code-review-prompt.md        # 기본 리뷰 프롬프트
 
 ~/.claude/skills/                # 스킬 (슬래시 커맨드)
+├── test-gate/SKILL.md           # /test-gate (라우터)
 ├── test-web/SKILL.md            # /test-web
-├── test-tauri/SKILL.md          # /test-tauri
-└── test-gate/SKILL.md           # /test-gate (둘 다)
+├── test-desktop/SKILL.md        # /test-desktop
+├── test-tauri/SKILL.md          # /test-tauri (deprecated alias)
+└── test-review/SKILL.md         # /test-review
 
 {프로젝트}/.claude/              # 프로젝트별 (자동 생성)
-├── test-scenarios.md            # (선택) 웹 테스트 시나리오
-├── tauri-test-scenarios.md      # (선택) Tauri 테스트 시나리오
-└── test-reports/
-    ├── HISTORY.md               # 테스트 히스토리
-    ├── {hash}-browser.md        # 웹 테스트 결과
-    ├── {hash}-tauri.md          # Tauri 테스트 결과
-    └── {hash}-report.md         # 합산 리포트
+├── test-scenarios/
+│   ├── web/                     # /test-web 시나리오
+│   └── desktop/                 # /test-desktop 시나리오
+├── test-reports/                # /test-web, /test-desktop 출력
+│   ├── HISTORY.md
+│   ├── {hash}-report.md
+│   └── artifacts/{hash}/        # 스크린샷
+└── review-reports/              # /test-review 출력
+    ├── HISTORY.md
+    └── {hash}-review.md
 ```
 
 ## 요구사항
 
 - [Claude Code](https://claude.ai/claude-code) Max 구독 또는 API 키
 - [Playwright MCP](https://www.npmjs.com/package/@playwright/mcp) — `/test-web`용
-- Tauri MCP — `/test-tauri`용 (생태계 초기 단계)
+- Tauri MCP — `/test-desktop`용 (생태계 초기 단계)
 
 ## 비용
 
-- **Max 구독**: 추가 비용 없음 (Haiku 4.5 사용)
+- **Max 구독**: 추가 비용 없음 (Haiku 4.5)
 - **API 과금**: 테스트 1회당 약 $0.01-0.05
 
 ## 왜 만들었나
@@ -216,22 +233,27 @@ Tauri 데스크톱앱을 Tauri MCP로 테스트합니다.
 AI 코딩 에이전트가 같은 세션에서 자기 코드를 테스트하면 확증 편향이 생깁니다.
 "이 정도면 됐지" — 프롬프트로 해결할 수 없는 구조적 문제.
 
-Test Gate는 **세션 격리**로 해결합니다:
+Test Gate는 **세션 격리**로 해결:
 
 1. **별도 프로세스** — 코딩 에이전트와 컨텍스트 공유 없음
 2. **읽기 전용** — `--allowedTools`로 MCP + Read만 허용
-3. **사람 게이트** — 리포트는 사람에게, 코딩 에이전트에게 자동 전달 안 함
+3. **사람 게이트** — 리포트는 사람에게, 코딩 에이전트에 자동 전달 안 함
 4. **히스토리** — 커밋 간 리그레션 패턴 추적
+
+[Dual Quality Gates](https://www.sagarmandal.com/2026/03/15/agentic-engineering-part-7-dual-quality-gates-why-validation-and-testing-must-be-separate-processes/) 패턴 구현체.
 
 ## 로드맵
 
-- [x] `/test-web` — Playwright MCP 브라우저 테스트
-- [x] `/test-tauri` — Tauri MCP 데스크톱 테스트
-- [x] `/test-gate` — 통합 자동 감지
-- [x] 히스토리 기반 리그레션 감지
-- [x] macOS 알림 + VSCode 자동 열기
-- [ ] Adversarial test agent (반복 실수 패턴 학습)
-- [ ] 연속 커밋 디바운스
+- [x] Phase 1: `/test-web` — Playwright MCP 브라우저 테스트
+- [x] Phase 2: `/test-desktop` — Tauri MCP 데스크톱 테스트
+- [x] Phase 3: 히스토리 기반 리그레션 감지
+- [x] `/test-review` — git diff 코드 리뷰
+- [x] `/test-gate`를 thin router로 (Phase A 리팩토링)
+- [x] 표면 기반 명명 (`/test-tauri` → `/test-desktop`)
+- [x] 표면별 시나리오 폴더 (`.claude/test-scenarios/{web,desktop}/`)
+- [ ] Phase B: 공통 config 파일 (`.claude/test-gate.toml`)
+- [ ] Phase C: `/test-api`, `/test-cli` 어댑터
+- [ ] Adversarial test agent (실수 패턴 학습)
 
 ## 라이선스
 
