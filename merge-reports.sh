@@ -54,6 +54,43 @@ FINAL_REPORT="$REPORT_DIR/$HASH-report.md"
 
 echo "[test-harness] Report: $FINAL_REPORT"
 
+# 리포트 검증: 스크린샷 경로가 실제 존재하는지 체크
+ARTIFACTS_DIR="$REPORT_DIR/artifacts/$HASH"
+if [ -f "$REPORT_DIR/$HASH-browser.md" ]; then
+    MISSING_SCREENSHOTS=""
+    # "Screenshot: /absolute/path" 형태에서 경로 추출
+    while IFS= read -r path; do
+        [ -z "$path" ] && continue
+        if [ ! -f "$path" ]; then
+            MISSING_SCREENSHOTS="$MISSING_SCREENSHOTS$path\n"
+        fi
+    done < <(grep -oE 'Screenshot:[[:space:]]*[^[:space:]]+' "$REPORT_DIR/$HASH-browser.md" 2>/dev/null | sed 's/Screenshot:[[:space:]]*//')
+
+    if [ -n "$MISSING_SCREENSHOTS" ]; then
+        {
+            echo ""
+            echo "---"
+            echo "## ⚠ Validation Warnings"
+            echo ""
+            echo "Report references screenshots that do not exist:"
+            echo -e "$MISSING_SCREENSHOTS"
+            echo "This usually means the test agent reported findings without actually capturing evidence."
+        } >> "$FINAL_REPORT"
+    fi
+
+    # 관찰 서술 누락 검증: "[PASS] xxx" 로만 끝나는 라인 카운트
+    SHALLOW_PASS=$(grep -cE '^\- \[PASS\] [^:]+$' "$REPORT_DIR/$HASH-browser.md" 2>/dev/null || echo 0)
+    if [ "$SHALLOW_PASS" -gt 0 ] 2>/dev/null; then
+        {
+            echo ""
+            echo "## ⚠ Shallow Pass Warnings"
+            echo ""
+            echo "$SHALLOW_PASS PASS entries have no observation description (just a checkmark)."
+            echo "Consider tightening the test prompt to require observation sentences."
+        } >> "$FINAL_REPORT"
+    fi
+fi
+
 # 히스토리 인덱스 업데이트
 HISTORY_FILE="$REPORT_DIR/HISTORY.md"
 
@@ -92,10 +129,33 @@ if [ ! -f "$HISTORY_FILE" ]; then
     } > "$HISTORY_FILE"
 fi
 
-# 새 행 추가 (헤더 바로 다음에 삽입 — 최신이 위로)
-sed -i '' "5a\\
-| $DATE | \`$SHORT_HASH\` | $COMMIT_MSG | **$RESULT** | $PASS_COUNT | $FAIL_COUNT | [$SHORT_HASH-report]($HASH-report.md) |
-" "$HISTORY_FILE" 2>/dev/null || {
-    # sed -i '' 실패 시 (GNU sed 등) 그냥 append
-    echo "| $DATE | \`$SHORT_HASH\` | $COMMIT_MSG | **$RESULT** | $PASS_COUNT | $FAIL_COUNT | [$SHORT_HASH-report]($HASH-report.md) |" >> "$HISTORY_FILE"
-}
+# 같은 커밋 해시의 기존 행이 있으면 삭제 (재테스트 시 최신 결과만 유지)
+if grep -q "\`$SHORT_HASH\`" "$HISTORY_FILE" 2>/dev/null; then
+    # macOS/BSD sed와 GNU sed 모두 호환
+    sed -i.bak "/\`$SHORT_HASH\`/d" "$HISTORY_FILE" 2>/dev/null
+    rm -f "$HISTORY_FILE.bak"
+fi
+
+# 새 행 추가 — 테이블 구분자 라인 바로 아래에 삽입 (최신이 위로)
+NEW_ROW="| $DATE | \`$SHORT_HASH\` | $COMMIT_MSG | **$RESULT** | $PASS_COUNT | $FAIL_COUNT | [$SHORT_HASH-report]($HASH-report.md) |"
+
+# awk로 안전하게 삽입: |------| 라인 바로 다음에 새 행 추가
+TMP_FILE=$(mktemp)
+awk -v row="$NEW_ROW" '
+    /^\|------/ && !inserted {
+        print
+        print row
+        inserted = 1
+        next
+    }
+    { print }
+' "$HISTORY_FILE" > "$TMP_FILE"
+
+# 삽입 성공 여부 확인 후 덮어쓰기
+if grep -q "$SHORT_HASH" "$TMP_FILE"; then
+    mv "$TMP_FILE" "$HISTORY_FILE"
+else
+    # awk 실패 시 append 폴백
+    rm -f "$TMP_FILE"
+    echo "$NEW_ROW" >> "$HISTORY_FILE"
+fi

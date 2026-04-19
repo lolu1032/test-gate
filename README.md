@@ -1,168 +1,32 @@
-# Test Gate
+# Test Gate — AI 에이전트 테스트 격리 하네스
 
-> AI agent QA isolation harness for Claude Code — Browser + Tauri desktop testing
+코딩 에이전트와 **별도 세션**에서 Playwright MCP로 웹앱을 테스트하고 리포트를 생성합니다.
+"이 정도면 됐지" 문제를 구조적으로 해결합니다.
 
-**[한국어 문서 (Korean)](README.ko.md)**
-
-When AI coding agents test their own work in the same session, they cut corners — marking things "done" when quality is lacking. Test Gate solves this structurally by running tests in a **completely separate session**.
-
-- **Web apps**: `/test-web` — Playwright MCP
-- **Tauri desktop apps**: `/test-tauri` — Tauri MCP
-- **Both at once**: `/test-gate` — auto-detects and runs both
-
-## How It Works
-
-```
-[Coding Agent Session]
-    ↓ (you type /test-web or /test-tauri)
-[Separate Claude Session — Haiku 4.5]
-    ├── /test-web   → Playwright MCP → browse, click, verify
-    └── /test-tauri  → Tauri MCP → window, menu, IPC, webview
-    ↓
-[Test Report + macOS notification + VSCode auto-open]
-    ↓
-[You review, then decide what to fix]
-```
-
-## Install
+## 빠른 시작
 
 ```bash
-git clone https://github.com/lolu1032/test-gate.git
-cd test-gate
-./install.sh
+# 프로젝트 디렉토리에서
+~/.claude/test-harness/test-now.sh
 ```
 
-This installs:
-- Harness scripts → `~/.claude/test-harness/`
-- Claude Code skills → `~/.claude/skills/test-web/`, `test-tauri/`, `test-gate/`
+끝. macOS 알림이 오면 리포트를 확인하세요.
 
-### Manual Install
+## 사용법
+
+### 수동 테스트 (기본)
 
 ```bash
-# Harness
-mkdir -p ~/.claude/test-harness
-cp *.sh *.md *.json ~/.claude/test-harness/
-chmod +x ~/.claude/test-harness/*.sh
+# 현재 프로젝트에서 실행
+~/.claude/test-harness/test-now.sh
 
-# Skills
-mkdir -p ~/.claude/skills/test-web ~/.claude/skills/test-tauri ~/.claude/skills/test-gate
-cp skills/test-web/SKILL.md ~/.claude/skills/test-web/
-cp skills/test-tauri/SKILL.md ~/.claude/skills/test-tauri/
-cp skills/test-gate/SKILL.md ~/.claude/skills/test-gate/
+# 특정 프로젝트 지정
+~/.claude/test-harness/test-now.sh ~/projects/workb
 ```
 
-## Usage
+### 자동 테스트 (커밋마다 자동 실행)
 
-### `/test-web` — Web App Testing
-
-```
-/test-web
-```
-
-Tests your web app running on localhost with Playwright MCP.
-
-- Auto-detects port from `package.json` (`--port 3001` etc.)
-- Checks if dev server is running
-- Offers to create project-specific test scenarios
-- Runs in background, macOS notification when done
-
-### `/test-tauri` — Tauri Desktop App Testing
-
-```
-/test-tauri
-```
-
-Tests your Tauri desktop app with Tauri MCP.
-
-- Auto-detects Tauri projects (`src-tauri/` directory)
-- Tests native features: window, menus, system tray, IPC
-- Tests webview content inside the app
-- Option to run web + Tauri tests together
-
-### `/test-gate` — Both (Auto-detect)
-
-```
-/test-gate
-```
-
-Runs web tests, then Tauri tests if `src-tauri/` exists.
-
-### Command Line (without skills)
-
-```bash
-~/.claude/test-harness/test-now.sh              # current project
-~/.claude/test-harness/test-now.sh ~/my-project  # specific project
-```
-
-## Results
-
-| Where | What |
-|-------|------|
-| **macOS notification** | Pass/fail summary popup |
-| **VSCode** | Report `.md` opens automatically |
-| **File** | `{project}/.claude/test-reports/{hash}-report.md` |
-| **History** | `{project}/.claude/test-reports/HISTORY.md` |
-
-### History Table
-
-Every test run adds a row to `HISTORY.md`:
-
-```
-| Date | Commit | Message | Result | Pass | Fail | Report |
-|------|--------|---------|--------|------|------|--------|
-| 2026-04-12 23:10 | a1b2c3d4 | fix: login form | PASS | 11 | 0 | link |
-| 2026-04-12 22:30 | e5f6g7h8 | feat: dashboard | FAIL | 8 | 3 | link |
-```
-
-The test agent reads this history and:
-- Marks `[REGRESSION]` when a PASS becomes FAIL
-- Focuses on previously failed areas when commit message has `fix:`
-- Treats FAIL→PASS areas as regression-sensitive
-
-## Project-Specific Test Scenarios
-
-### Web (`/test-web`)
-
-Create `.claude/test-scenarios.md` in your project root:
-
-```markdown
-# Test Scenarios
-
-## Login
-- URL: http://localhost:3000
-- Credentials: admin@admin.com / 1234
-
-## Required Tests
-1. Login and verify dashboard loads
-2. Navigate to /posts and check list renders
-3. Submit form on /posts/new
-4. Check responsive layout at 768px and 375px
-```
-
-### Tauri (`/test-tauri`)
-
-Create `.claude/tauri-test-scenarios.md`:
-
-```markdown
-# Tauri Test Scenarios
-
-## App Launch
-1. Window opens with correct title
-2. Window dimensions match config
-
-## Native Features
-1. System tray icon displays
-2. Menu bar items work
-3. File open dialog functions
-
-## Webview
-1. Main page renders inside webview
-2. IPC calls from frontend reach Rust backend
-```
-
-## Auto Mode (Optional)
-
-Add to `~/.claude/settings.json` to trigger tests on every commit:
+`~/.claude/settings.json`에 hook 추가:
 
 ```json
 {
@@ -182,71 +46,89 @@ Add to `~/.claude/settings.json` to trigger tests on every commit:
 }
 ```
 
-Skip with `[skip-test]` in commit message.
+### 특정 커밋 스킵 (자동 모드)
 
-## File Structure
+커밋 메시지에 `[skip-test]` 추가:
 
-```
-~/.claude/test-harness/          # Harness (installed globally)
-├── test-now.sh                  # Manual trigger (CLI)
-├── check-and-run.sh             # Auto mode hook
-├── run-all-tests.sh             # Test runner
-├── merge-reports.sh             # Report aggregation + history
-├── browser-test-prompt.md       # Default web test prompt
-├── browser-mcp.json             # Playwright MCP config
-├── tauri-test-prompt.md         # Default Tauri test prompt
-├── tauri-mcp.json               # Tauri MCP config
-└── install.sh                   # Installer
-
-~/.claude/skills/                # Skills (slash commands)
-├── test-web/SKILL.md            # /test-web
-├── test-tauri/SKILL.md          # /test-tauri
-└── test-gate/SKILL.md           # /test-gate (both)
-
-{project}/.claude/               # Per-project (auto-generated)
-├── test-scenarios.md            # (optional) Web test scenarios
-├── tauri-test-scenarios.md      # (optional) Tauri test scenarios
-└── test-reports/
-    ├── HISTORY.md               # Test history table
-    ├── {hash}-browser.md        # Web test results
-    ├── {hash}-tauri.md          # Tauri test results
-    └── {hash}-report.md         # Combined report
+```bash
+git commit -m "docs: README 수정 [skip-test]"
 ```
 
-## Requirements
+## 리포트 확인
 
-- [Claude Code](https://claude.ai/claude-code) with Max subscription or API key
-- [Playwright MCP](https://www.npmjs.com/package/@playwright/mcp) plugin for `/test-web`
-- Tauri MCP for `/test-tauri` (ecosystem is early-stage)
+| 방법 | 위치 |
+|------|------|
+| **macOS 알림** | 테스트 완료 시 자동 팝업 |
+| **VSCode** | 리포트 `.md` 파일이 에디터에 자동 열림 |
+| **파일** | `{프로젝트}/.claude/test-reports/{hash}-report.md` |
+| **히스토리** | `{프로젝트}/.claude/test-reports/HISTORY.md` |
 
-## Cost
+## 프로젝트별 커스텀
 
-- **Max subscription**: Included (uses Haiku 4.5)
-- **API billing**: ~$0.01-0.05 per test run
+프로젝트 루트에 `.claude/test-scenarios.md`를 만들면 기본 프롬프트 대신 사용됩니다:
 
-## Why This Exists
+```markdown
+# 테스트 시나리오
 
-AI coding agents in the same session have confirmation bias toward their own work. They declare "looks good" prematurely.
+## 필수 테스트
+1. localhost:3000 메인 페이지 로드 확인
+2. /login 페이지에서 로그인 폼 동작 확인
+3. /dashboard 페이지 데이터 로드 확인
 
-Test Gate fixes this with **session isolation**:
+## 중점 확인
+- 사이드바 네비게이션이 모든 페이지에서 동작하는지
+- API 에러 시 에러 메시지가 표시되는지
+```
 
-1. **Separate process** — zero shared context with coding agent
-2. **Read-only** — `--allowedTools` restricts to MCP + Read only
-3. **Human gate** — reports go to you, not the coding agent
-4. **History** — regression patterns tracked across commits
+## 파일 구조
 
-Implements the [Dual Quality Gates](https://www.sagarmandal.com/2026/03/15/agentic-engineering-part-7-dual-quality-gates-why-validation-and-testing-must-be-separate-processes/) pattern.
+```
+~/.claude/test-harness/
+├── README.md              # 이 파일
+├── test-now.sh            # 수동 실행 명령어
+├── check-and-run.sh       # 자동 모드용 hook 스크립트
+├── run-all-tests.sh       # 테스트 실행 (claude --print + Playwright MCP)
+├── merge-reports.sh       # 리포트 합산 + 히스토리 업데이트
+├── browser-test-prompt.md # 기본 테스트 프롬프트
+├── browser-mcp.json       # Playwright MCP 설정
+├── .last-tested-hash      # (자동 생성) 마지막 테스트한 커밋
+├── .test-running           # (자동 생성) 실행 중 lock
+└── .last-test.log          # (자동 생성) 마지막 테스트 로그
 
-## Roadmap
+{프로젝트}/
+└── .claude/
+    ├── test-scenarios.md   # (선택) 프로젝트별 테스트 시나리오
+    └── test-reports/
+        ├── HISTORY.md      # 테스트 히스토리 테이블
+        ├── {hash}-browser.md  # Playwright 테스트 결과
+        └── {hash}-report.md   # 합산 리포트
+```
 
-- [x] `/test-web` — Playwright MCP browser testing
-- [x] `/test-tauri` — Tauri MCP desktop testing
-- [x] `/test-gate` — combined auto-detect
-- [x] History-aware regression detection
-- [x] macOS notifications + VSCode auto-open
-- [ ] Adversarial test agent (learns mistake patterns)
-- [ ] Debounce for rapid commits
+## 동작 원리
 
-## License
+1. `test-now.sh` 실행 (또는 hook이 자동 트리거)
+2. `run-all-tests.sh`가 백그라운드에서 `claude --print` 실행
+   - 모델: Haiku 4.5 (비용 절약)
+   - MCP: Playwright (브라우저 자동화)
+   - 권한: 읽기 + MCP만 허용 (코드 수정 불가)
+3. 테스트 에이전트가 웹앱을 돌아다니며 검증
+4. 리포트 생성 → macOS 알림 → VSCode에서 열기
+5. HISTORY.md에 결과 기록 (PASS/FAIL/REGRESSION)
 
-MIT
+## 히스토리 활용
+
+테스트 에이전트는 HISTORY.md를 읽고:
+- 이전에 FAIL→PASS 된 항목을 **리그레션 민감** 영역으로 인식
+- 이전 PASS가 FAIL이 되면 **[REGRESSION]** 표시
+- 커밋 메시지에 fix:가 있으면 관련 FAIL 항목을 집중 검증
+
+## 비용
+
+- Max 20x 구독: 추가 비용 없음 (구독 사용량에 포함)
+- API 과금: Haiku 4.5 기준 테스트 1회당 약 $0.01-0.05
+
+## Phase 2 (예정)
+
+- Tauri MCP 추가 (데스크톱 앱 테스트)
+- 디바운스 (연속 커밋 시 마지막만 테스트)
+- adversarial test agent (반복 실수 패턴 학습)
