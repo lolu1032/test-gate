@@ -46,7 +46,7 @@ This means a Go web server, a Java Spring app, a Next.js app, and a Tauri app ca
 
 ```bash
 git clone https://github.com/lolu1032/gotcha.git
-cd test-gate
+cd gotcha
 ./install.sh
 ```
 

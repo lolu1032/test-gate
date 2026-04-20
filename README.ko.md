@@ -47,7 +47,7 @@ Gotcha는 **표면(surface) 기반** 명명을 사용합니다 (프레임워크 
 
 ```bash
 git clone https://github.com/lolu1032/gotcha.git
-cd test-gate
+cd gotcha
 ./install.sh
 ```
 
