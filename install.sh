@@ -23,14 +23,18 @@ cp "$SCRIPT_DIR/code-review-prompt.md" "$HARNESS_DIR/" 2>/dev/null || true
 chmod +x "$HARNESS_DIR"/*.sh
 echo "  Harness: $HARNESS_DIR"
 
-# Claude Code skills
-mkdir -p "$SKILL_DIR/test-web" "$SKILL_DIR/test-desktop" "$SKILL_DIR/test-tauri" "$SKILL_DIR/test-gate" "$SKILL_DIR/test-review"
+# Claude Code skills (4 skills, no more test-tauri alias)
+mkdir -p "$SKILL_DIR/test-web" "$SKILL_DIR/test-desktop" "$SKILL_DIR/test-gate" "$SKILL_DIR/test-review"
 cp "$SCRIPT_DIR/skills/test-web/SKILL.md" "$SKILL_DIR/test-web/"
 cp "$SCRIPT_DIR/skills/test-desktop/SKILL.md" "$SKILL_DIR/test-desktop/"
-cp "$SCRIPT_DIR/skills/test-tauri/SKILL.md" "$SKILL_DIR/test-tauri/"
 cp "$SCRIPT_DIR/skills/test-gate/SKILL.md" "$SKILL_DIR/test-gate/"
 cp "$SCRIPT_DIR/skills/test-review/SKILL.md" "$SKILL_DIR/test-review/"
-echo "  Skills:  /test-gate (router), /test-web, /test-desktop, /test-tauri (alias), /test-review"
+# Korean reference docs
+cp "$SCRIPT_DIR/skills/test-web/SKILL.ko.md" "$SKILL_DIR/test-web/" 2>/dev/null || true
+cp "$SCRIPT_DIR/skills/test-desktop/SKILL.ko.md" "$SKILL_DIR/test-desktop/" 2>/dev/null || true
+cp "$SCRIPT_DIR/skills/test-gate/SKILL.ko.md" "$SKILL_DIR/test-gate/" 2>/dev/null || true
+cp "$SCRIPT_DIR/skills/test-review/SKILL.ko.md" "$SKILL_DIR/test-review/" 2>/dev/null || true
+echo "  Skills:  /test-gate (router), /test-web, /test-desktop, /test-review"
 
 echo ""
 echo "Done! Commands:"

@@ -1,28 +1,27 @@
 ---
 name: test-desktop
-description: 별도 세션에서 데스크톱앱 QA 테스트 실행 (현재 Tauri MCP 지원)
+description: Run desktop app QA in a separate session (currently supports Tauri MCP)
 user_invocable: true
 ---
 
 # Test Desktop
 
-별도 Claude 세션에서 Tauri MCP로 데스크톱앱을 테스트하고 리포트를 생성한다.
+Tests desktop apps in a **completely separate Claude session**. Currently supports Tauri MCP. Session isolation prevents the coding agent from rationalizing its own work.
 
-## 실행
+## Detection
 
 ```bash
 PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
 echo "PROJECT: $PROJECT_ROOT"
 echo "COMMIT: $(git -C "$PROJECT_ROOT" log -1 --format='%h %s' 2>/dev/null || echo 'no commits')"
 
-# 하네스 설치 확인
 if [ -x "$HOME/.claude/test-harness/test-now.sh" ]; then
     echo "HARNESS: installed"
 else
     echo "HARNESS: NOT INSTALLED"
 fi
 
-# Tauri 프로젝트인지 확인
+# Tauri project check
 if [ -f "$PROJECT_ROOT/src-tauri/tauri.conf.json" ] || [ -f "$PROJECT_ROOT/src-tauri/Cargo.toml" ]; then
     echo "TAURI: detected"
     TAURI_APP=$(grep -oE '"productName":\s*"[^"]+"' "$PROJECT_ROOT/src-tauri/tauri.conf.json" 2>/dev/null | grep -oE '"[^"]+"\s*$' | tr -d '"' || echo "unknown")
@@ -31,7 +30,7 @@ else
     echo "TAURI: NOT DETECTED"
 fi
 
-# 시나리오 감지 (우선순위: 신규 폴더 → 구 폴더 → 구 단일 파일)
+# Scenario detection (priority: new folder → legacy folder → legacy file)
 SCENARIOS_NEW="$PROJECT_ROOT/.claude/test-scenarios/desktop"
 SCENARIOS_OLD_DIR="$PROJECT_ROOT/.claude/tauri-test-scenarios"
 SCENARIOS_OLD_FILE="$PROJECT_ROOT/.claude/tauri-test-scenarios.md"
@@ -57,118 +56,108 @@ else
     echo "SCENARIOS: none (default prompt)"
 fi
 
-# 히스토리 확인
 if [ -f "$PROJECT_ROOT/.claude/test-reports/HISTORY.md" ]; then
     echo "HISTORY:"
     head -9 "$PROJECT_ROOT/.claude/test-reports/HISTORY.md"
 fi
 ```
 
-## 동작
+## Behavior
 
-하네스가 설치되어 있지 않으면:
+If harness not installed:
 
-> Test Gate 하네스가 설치되어 있지 않습니다.
-> 설치: `git clone https://github.com/lolu1032/test-gate.git && cd test-gate && ./install.sh`
+> Test Gate harness is not installed.
+> Install: `git clone https://github.com/lolu1032/test-gate.git && cd test-gate && ./install.sh`
 
-Tauri 프로젝트가 아니면:
+If not a Tauri project:
 
-> 이 프로젝트에서 `src-tauri/` 디렉토리를 찾을 수 없습니다.
-> Tauri 프로젝트가 아니라면 `/test-web`으로 웹 테스트를 실행하세요.
+> No `src-tauri/` directory found.
+> If this is not a Tauri project, run `/test-web` for web testing instead.
 
-### 시나리오 상태별 분기
+### Scenario branches
 
-**모든 경우 항상 사용자에게 먼저 묻는다. 자동으로 진행하지 않는다.**
+**ALWAYS ask the user first. Never auto-execute.**
 
-**시나리오가 폴더인 경우** — 파일 목록 + AskUserQuestion:
+**If scenarios exist as folder:**
 
-> **Tauri 테스트** — {앱이름}
-> 커밋: {hash} {message}
-> 시나리오 폴더: .claude/tauri-test-scenarios/ ({N}개 파일)
+> **Desktop Test** — {app name}
+> Commit: {hash} {message}
+> Scenarios folder: .claude/test-scenarios/desktop/ ({N} files)
 >
-> 파일: _always.md, window.md, ipc.md, ... 등
+> Files: _always.md, window.md, ipc.md, ...
 
 Options:
-- A) 그대로 실행
-- B) 시나리오 파일 추가 — 사용자가 직접 내용 작성
-- C) 시나리오 관리 (편집/삭제)
-- D) 웹 테스트도 함께 (/test-web + /test-tauri)
-- E) 취소
+- A) Run as-is
+- B) Add scenario file — user writes content
+- C) Manage scenarios — edit/delete
+- D) Run web tests too (/test-web + /test-desktop)
+- E) Cancel
 
-**시나리오가 단일 파일인 경우** — 미리보기 + AskUserQuestion:
+**If scenarios exist as single file:**
 
-> **Tauri 테스트** — {앱이름}
-> 커밋: {hash} {message}
-> 시나리오 파일: .claude/tauri-test-scenarios.md ({N}줄)
+> **Desktop Test** — {app name}
+> Commit: {hash} {message}
+> Scenario file: .claude/tauri-test-scenarios.md ({N} lines)
 >
-> --- 미리보기 ---
-> {파일 내용 전체 또는 앞 30줄}
+> --- Preview ---
+> {file content, full or first 30 lines}
 
 Options:
-- A) 그대로 실행
-- B) 시나리오 추가 — 사용자가 직접 작성
-- C) 시나리오 수정 — 사용자가 직접 재작성
-- D) 폴더 방식으로 분할
-- E) 웹 테스트도 함께
-- F) 취소
+- A) Run as-is
+- B) Add scenarios — user writes
+- C) Edit scenarios — user rewrites
+- D) Migrate to folder structure
+- E) Run web tests too
+- F) Cancel
 
-**시나리오가 없는 경우** — 반드시 사용자에게 먼저 묻는다. 자동으로 기본 프롬프트 실행 금지:
+**If no scenarios** — must always ask user. No auto-default execution:
 
-> **Tauri 테스트** — {앱이름}
-> 커밋: {hash} {message}
-> 시나리오: 없음
+> **Desktop Test** — {app name}
+> Commit: {hash} {message}
+> Scenarios: none
 >
-> 시나리오 없이 돌리면 에이전트가 앱을 무작위로 돌아봅니다.
-> 테스트 품질을 위해 시나리오를 직접 작성하는 것을 권장해요.
+> Without scenarios, the agent will navigate the app randomly.
+> Writing scenarios is recommended for test quality.
 
 Options:
-- A) 시나리오 직접 작성 — 단일 파일 (.claude/tauri-test-scenarios.md)
-- B) 시나리오 폴더 만들기 — 기능별 분할 (.claude/tauri-test-scenarios/)
-- C) 기본 프롬프트로 그냥 돌리기 — 시나리오 없이 (비추천)
-- D) 웹 테스트도 함께
-- E) 취소
+- A) Write scenarios — single file (.claude/tauri-test-scenarios.md)
+- B) Create scenario folder — feature-based (.claude/tauri-test-scenarios/)
+- C) Run with default prompt — no scenarios (not recommended)
+- D) Run web tests too
+- E) Cancel
 
-## 실행 로직
+## Execution
 
-### A) 그대로 실행 (Tauri만)
+### A) Run as-is (desktop only)
 
 ```bash
-PROJECT_ROOT=$(git rev-parse --show-toplevel)
-HASH=$(git rev-parse HEAD)
-HARNESS_DIR="$HOME/.claude/test-harness"
-REPORT_DIR="$PROJECT_ROOT/.claude/test-reports"
-mkdir -p "$REPORT_DIR"
-
-# run-all-tests.sh가 폴더/단일/기본 시나리오 자동 감지
-# Tauri만 실행하려면 browser 스킵 플래그가 필요하지만 현재는 run-all-tests.sh 사용
 nohup ~/.claude/test-harness/run-all-tests.sh "$HASH" "$PROJECT_ROOT" \
     > /dev/null 2>&1 &
-
-echo "PID: $!"
 ```
 
-### B) 시나리오 추가
+### B) Write or add scenarios
 
-**단일 파일 상태**: 현재 파일 끝에 새 섹션 append.
+Always ask user. Never auto-fill.
 
-**폴더 상태**: 새 파일 이름 물어보고 `.claude/tauri-test-scenarios/{name}.md` 생성.
+Ask the user:
+1. **App launch behavior to verify?**
+2. **Native features to test?** (window/menu/tray/IPC)
+3. **Webview content to verify?**
+4. **Edge cases?**
 
-예시:
+Use the answers to fill this template:
+
 ```markdown
 # {Feature Name} Tests
 
-## 네이티브 기능
-- {창 관리 / 메뉴 / 트레이 / IPC} 테스트
+## Native Features
+- {window/menu/tray/IPC} verification
 
-## 웹뷰
-- {페이지/기능} 확인
+## Webview
+- {page/feature} check
 ```
 
-### C) 시나리오 관리 (폴더)
-
-폴더 내 파일 목록 보여주고 편집/삭제/이름변경 진행.
-
-### 단일 파일 → 폴더 마이그레이션
+### Single file → folder migration
 
 ```bash
 PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
@@ -177,19 +166,19 @@ mv "$PROJECT_ROOT/.claude/tauri-test-scenarios.md" "$PROJECT_ROOT/.claude/tauri-
 echo "Migrated to folder structure."
 ```
 
-### 웹 + Tauri 동시 실행
+### Web + Desktop together
 
-기본 `run-all-tests.sh`가 `src-tauri/`를 감지하면 자동으로 브라우저 + Tauri 둘 다 돌린다.
+The default `run-all-tests.sh` auto-detects `src-tauri/` and runs both browser + Tauri.
 
-## 시나리오 폴더 구조 (권장)
+## Recommended scenario folder structure
 
 ```
-.claude/tauri-test-scenarios/
-├── _always.md        # 항상 실행 (앱 실행, 윈도우 기본)
-├── window.md         # 창 관리 (리사이즈, 최소화 등)
+.claude/test-scenarios/desktop/
+├── _always.md        # always run (app launch, basic window)
+├── window.md         # window management (resize, minimize)
 ├── ipc.md            # Rust ↔ Frontend IPC
-├── menu.md           # 네이티브 메뉴
-└── tray.md           # 시스템 트레이
+├── menu.md           # native menu
+└── tray.md           # system tray
 ```
 
-실행 시 폴더 내 모든 `.md` 파일이 `_always.md` 먼저, 나머지는 알파벳 순으로 합쳐져 프롬프트로 전달된다.
+On execution, all `.md` files are concatenated: `_always.md` first, then alphabetical.

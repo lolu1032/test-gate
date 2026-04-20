@@ -53,7 +53,6 @@ cd test-gate
 
 설치되는 것:
 - 하네스 스크립트 → `~/.claude/test-harness/`
-- Claude Code 스킬 → `~/.claude/skills/{test-gate, test-web, test-desktop, test-tauri, test-review}/`
 
 ## 사용법
 
@@ -82,7 +81,6 @@ Tauri 데스크톱 앱을 Tauri MCP로 테스트.
 - 네이티브 기능 테스트: 윈도우, 메뉴, 시스템 트레이, IPC
 - 웹뷰 내부 콘텐츠 테스트
 
-### `/test-tauri` (deprecated alias)
 
 `/test-desktop`으로 리다이렉트. 호환성 유지용.
 
@@ -201,7 +199,6 @@ HISTORY.md를 읽고 활용:
 ├── test-gate/SKILL.md           # /test-gate (라우터)
 ├── test-web/SKILL.md            # /test-web
 ├── test-desktop/SKILL.md        # /test-desktop
-├── test-tauri/SKILL.md          # /test-tauri (deprecated alias)
 └── test-review/SKILL.md         # /test-review
 
 {프로젝트}/.claude/              # 프로젝트별 (자동 생성)
@@ -249,7 +246,6 @@ Test Gate는 **세션 격리**로 해결:
 - [x] Phase 3: 히스토리 기반 리그레션 감지
 - [x] `/test-review` — git diff 코드 리뷰
 - [x] `/test-gate`를 thin router로 (Phase A 리팩토링)
-- [x] 표면 기반 명명 (`/test-tauri` → `/test-desktop`)
 - [x] 표면별 시나리오 폴더 (`.claude/test-scenarios/{web,desktop}/`)
 - [ ] Phase B: 공통 config 파일 (`.claude/test-gate.toml`)
 - [ ] Phase C: `/test-api`, `/test-cli` 어댑터

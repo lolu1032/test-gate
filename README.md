@@ -52,7 +52,6 @@ cd test-gate
 
 This installs:
 - Harness scripts → `~/.claude/test-harness/`
-- Claude Code skills → `~/.claude/skills/{test-gate, test-web, test-desktop, test-tauri, test-review}/`
 
 ### Manual Install
 
@@ -61,7 +60,6 @@ mkdir -p ~/.claude/test-harness
 cp *.sh *.md *.json ~/.claude/test-harness/
 chmod +x ~/.claude/test-harness/*.sh
 
-mkdir -p ~/.claude/skills/{test-gate,test-web,test-desktop,test-tauri,test-review}
 cp skills/*/SKILL.md ~/.claude/skills/  # adjust per-folder
 ```
 
@@ -92,7 +90,6 @@ Tests Tauri desktop apps with Tauri MCP.
 - Tests native features: window, menus, system tray, IPC
 - Tests webview content inside the app
 
-### `/test-tauri` (deprecated alias)
 
 Redirects to `/test-desktop`. Kept for backward compatibility.
 
@@ -211,7 +208,6 @@ Test Gate reads `HISTORY.md` from previous runs:
 ├── test-gate/SKILL.md           # /test-gate (router)
 ├── test-web/SKILL.md            # /test-web
 ├── test-desktop/SKILL.md        # /test-desktop
-├── test-tauri/SKILL.md          # /test-tauri (deprecated alias)
 └── test-review/SKILL.md         # /test-review
 
 {project}/.claude/               # Per-project (auto-generated)
@@ -258,7 +254,6 @@ Implements the [Dual Quality Gates](https://www.sagarmandal.com/2026/03/15/agent
 - [x] Phase 3: History-aware regression detection
 - [x] `/test-review` — code review on git diff
 - [x] `/test-gate` as thin router (Phase A refactor)
-- [x] Surface-based naming (`/test-desktop` over `/test-tauri`)
 - [x] Surface-based scenario folders (`.claude/test-scenarios/{web,desktop}/`)
 - [ ] Phase B: common config file (`.claude/test-gate.toml`)
 - [ ] Phase C: `/test-api`, `/test-cli` adapters

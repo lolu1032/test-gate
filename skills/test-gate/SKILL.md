@@ -1,22 +1,22 @@
 ---
 name: test-gate
-description: 테스트 라우터 — 프로젝트의 테스트 표면(web/desktop/review)을 감지하고 적절한 어댑터로 위임
+description: Test router — detects testable surfaces (web/desktop/review) in the project and delegates to the appropriate adapter
 user_invocable: true
 ---
 
 # Test Gate (Router)
 
-이 스킬은 **라우터**다. 직접 테스트를 실행하지 않는다. 프로젝트에서 테스트 가능한 표면(surface)을 감지하고, 사용자에게 어떤 표면을 테스트할지 묻고, 해당 어댑터 스킬에 위임한다.
+This skill is a **router**. It does not run tests directly. It detects which surfaces (web/desktop/review) are testable in the current project, asks the user which surface(s) to test, and delegates to the corresponding adapter skill.
 
-## 어댑터 (실제 실행자)
+## Adapters (actual runners)
 
-| 어댑터 | 표면 | 구현 |
-|--------|------|------|
-| `/test-web` | 브라우저로 접근 가능한 웹앱 | Playwright MCP |
-| `/test-desktop` | 데스크톱 앱 | Tauri MCP (현재 유일) |
-| `/test-review` | git diff 코드 리뷰 | Read + Grep |
+| Adapter | Surface | Implementation |
+|---------|---------|----------------|
+| `/test-web` | Web app reachable via browser | Playwright MCP |
+| `/test-desktop` | Desktop app | Tauri MCP (currently the only option) |
+| `/test-review` | Code diff review | Read + Grep |
 
-## 실행
+## Execution
 
 ```bash
 PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
@@ -30,11 +30,11 @@ fi
 HASH=$(git -C "$PROJECT_ROOT" rev-parse HEAD 2>/dev/null)
 echo "COMMIT: ${HASH:0:8} $(git -C "$PROJECT_ROOT" log -1 --format='%s')"
 
-# 표면 감지
+# Surface detection
 echo ""
 echo "=== Detected Surfaces ==="
 
-# Web: package.json + dev script가 있으면 web
+# Web: package.json with dev script → web
 HAS_WEB="no"
 if [ -f "$PROJECT_ROOT/package.json" ] && grep -qE '"dev"|"start"' "$PROJECT_ROOT/package.json" 2>/dev/null; then
     HAS_WEB="yes"
@@ -43,14 +43,14 @@ if [ -f "$PROJECT_ROOT/package.json" ] && grep -qE '"dev"|"start"' "$PROJECT_ROO
     echo "[web]      package.json detected, hint port: $PORT"
 fi
 
-# Desktop: src-tauri/ 가 있으면 desktop
+# Desktop: src-tauri/ → desktop
 HAS_DESKTOP="no"
 if [ -f "$PROJECT_ROOT/src-tauri/tauri.conf.json" ] || [ -f "$PROJECT_ROOT/src-tauri/Cargo.toml" ]; then
     HAS_DESKTOP="yes"
     echo "[desktop]  src-tauri/ detected (Tauri)"
 fi
 
-# Review: git diff 변경사항 있으면 review 가능
+# Review: any diff → review possible
 DIFF_LINES=$(git -C "$PROJECT_ROOT" diff HEAD~1 HEAD --shortstat 2>/dev/null)
 if [ -n "$DIFF_LINES" ]; then
     echo "[review]   diff available: $DIFF_LINES"
@@ -61,53 +61,53 @@ if [ "$HAS_WEB" = "no" ] && [ "$HAS_DESKTOP" = "no" ]; then
 fi
 ```
 
-## 동작
+## Behavior
 
-감지 결과를 보여준 후 AskUserQuestion:
+After detection, AskUserQuestion:
 
-> **Test Gate** — {프로젝트명}
-> 커밋: {hash} {message}
+> **Test Gate** — {project name}
+> Commit: {hash} {message}
 >
-> 감지된 표면:
-> - [web]      {여부}
-> - [desktop]  {여부}
-> - [review]   {여부}
+> Detected surfaces:
+> - [web]      {yes/no}
+> - [desktop]  {yes/no}
+> - [review]   {yes/no}
 >
-> 어떤 테스트를 실행할까요? **여러 개 선택 가능 (multiSelect).**
+> Which test(s) to run? **Multiple selections allowed (multiSelect).**
 
 multiSelect: true
 
-Options (감지된 것만 표시):
-- A) `/test-web` — 웹앱 QA (Playwright MCP)
-- B) `/test-desktop` — 데스크톱 앱 QA (Tauri MCP)
-- C) `/test-review` — 코드 리뷰 (git diff)
-- D) 취소
+Options (only show detected surfaces):
+- A) `/test-web` — Web app QA (Playwright MCP)
+- B) `/test-desktop` — Desktop app QA (Tauri MCP)
+- C) `/test-review` — Code review (git diff)
+- D) Cancel
 
-## 위임 로직
+## Delegation
 
-선택된 각 옵션에 대해, 해당 스킬 파일을 읽고 그 지시를 따른다:
+For each selected option, read the corresponding skill file and follow its instructions:
 
-- A 선택 시: `~/.claude/skills/test-web/SKILL.md` 읽고 실행
-- B 선택 시: `~/.claude/skills/test-desktop/SKILL.md` 읽고 실행
-- C 선택 시: `~/.claude/skills/test-review/SKILL.md` 읽고 실행
+- A: read `~/.claude/skills/test-web/SKILL.md` and execute
+- B: read `~/.claude/skills/test-desktop/SKILL.md` and execute
+- C: read `~/.claude/skills/test-review/SKILL.md` and execute
 
-여러 개 선택 시 순차 실행 (web → desktop → review 순).
+If multiple selected, run sequentially in order: web → desktop → review.
 
-각 어댑터 스킬은 자체적으로 시나리오 관리, 사용자 확인을 처리한다. test-gate는 라우팅만 한다.
+Each adapter handles its own scenario management and user confirmation. test-gate only routes.
 
-## 라우터의 책임
+## Router responsibilities
 
-- 표면 감지 (감지 로직만, 실행 안 함)
-- 사용자에게 어떤 표면 실행할지 묻기
-- 적절한 어댑터로 위임
+- Surface detection (only detection, no execution)
+- Asking the user which surface(s) to run
+- Delegating to the appropriate adapter
 
-## 라우터의 비책임
+## Router non-responsibilities
 
-- 테스트 실행 ❌
-- 시나리오 관리 ❌
-- 리포트 생성 ❌
-- 결과 집계 (각 어댑터의 리포트는 따로 생성됨)
+- Running tests ❌
+- Managing scenarios ❌
+- Generating reports ❌
+- Aggregating results (each adapter writes its own report) ❌
 
-## 디자인 원칙
+## Design principle
 
-이 스킬은 thin router다. 실행 로직을 추가하지 마라. 새 표면이 생기면 새 어댑터 스킬을 만들고, 여기서는 감지 + 위임만 추가한다.
+This skill is a thin router. Do not add execution logic here. When a new surface is added, create a new adapter skill, and only add detection + delegation here.
