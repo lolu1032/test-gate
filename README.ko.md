@@ -1,23 +1,23 @@
-# Test Gate
+# Gotcha
 
 > Claude Code용 AI 에이전트 QA 격리 하네스 — 웹 + 데스크톱 + 코드 리뷰
 
 **[English](README.md)**
 
 AI 코딩 에이전트가 같은 세션에서 자기 코드를 테스트하면 "이 정도면 됐지" 하고 대충 넘어갑니다.
-Test Gate는 **완전히 별도의 세션**에서 테스트를 돌려서 이 문제를 구조적으로 해결합니다.
+Gotcha는 **완전히 별도의 세션**에서 테스트를 돌려서 이 문제를 구조적으로 해결합니다.
 
 - **웹앱**: `/test-web` — Playwright MCP
 - **데스크톱앱**: `/test-desktop` — Tauri MCP (현재)
 - **코드 리뷰**: `/test-review` — git diff 분석
-- **라우터**: `/test-gate` — 표면 감지 + 위임
+- **라우터**: `/gotcha` — 표면 감지 + 위임
 
 ## 동작 흐름
 
 ```
 [코딩 에이전트 세션]
-    ↓ (/test-gate 또는 표면별 스킬 실행)
-[/test-gate 라우터]
+    ↓ (/gotcha 또는 표면별 스킬 실행)
+[/gotcha 라우터]
     ├── 프로젝트의 표면 감지
     └── 어댑터에 위임:
 [별도 Claude 세션 — Haiku 4.5]
@@ -32,21 +32,21 @@ Test Gate는 **완전히 별도의 세션**에서 테스트를 돌려서 이 문
 
 ## 아키텍처
 
-Test Gate는 **표면(surface) 기반** 명명을 사용합니다 (프레임워크 기반 X):
+Gotcha는 **표면(surface) 기반** 명명을 사용합니다 (프레임워크 기반 X):
 
 | 스킬 | 표면 | 구현 |
 |------|------|------|
 | `/test-web` | 웹앱 (브라우저) | Playwright MCP |
 | `/test-desktop` | 데스크톱 앱 | Tauri MCP |
 | `/test-review` | 코드 diff | Read + Grep + git |
-| `/test-gate` | 라우터 | 감지 + 위임 |
+| `/gotcha` | 라우터 | 감지 + 위임 |
 
 이렇게 하면 Go 웹서버, Java Spring 앱, Next.js 앱, Tauri 앱 모두 같은 스킬로 테스트 가능. 어댑터만 다름.
 
 ## 설치
 
 ```bash
-git clone https://github.com/lolu1032/test-gate.git
+git clone https://github.com/lolu1032/gotcha.git
 cd test-gate
 ./install.sh
 ```
@@ -56,10 +56,10 @@ cd test-gate
 
 ## 사용법
 
-### `/test-gate` — 라우터 (추천)
+### `/gotcha` — 라우터 (추천)
 
 ```
-/test-gate
+/gotcha
 ```
 
 프로젝트에 적용 가능한 표면을 감지하고, 여러 개 선택 가능, 각 어댑터에 위임.
@@ -196,7 +196,7 @@ HISTORY.md를 읽고 활용:
 └── code-review-prompt.md        # 기본 리뷰 프롬프트
 
 ~/.claude/skills/                # 스킬 (슬래시 커맨드)
-├── test-gate/SKILL.md           # /test-gate (라우터)
+├── test-gate/SKILL.md           # /gotcha (라우터)
 ├── test-web/SKILL.md            # /test-web
 ├── test-desktop/SKILL.md        # /test-desktop
 └── test-review/SKILL.md         # /test-review
@@ -230,7 +230,7 @@ HISTORY.md를 읽고 활용:
 AI 코딩 에이전트가 같은 세션에서 자기 코드를 테스트하면 확증 편향이 생깁니다.
 "이 정도면 됐지" — 프롬프트로 해결할 수 없는 구조적 문제.
 
-Test Gate는 **세션 격리**로 해결:
+Gotcha는 **세션 격리**로 해결:
 
 1. **별도 프로세스** — 코딩 에이전트와 컨텍스트 공유 없음
 2. **읽기 전용** — `--allowedTools`로 MCP + Read만 허용
@@ -245,9 +245,9 @@ Test Gate는 **세션 격리**로 해결:
 - [x] Phase 2: `/test-desktop` — Tauri MCP 데스크톱 테스트
 - [x] Phase 3: 히스토리 기반 리그레션 감지
 - [x] `/test-review` — git diff 코드 리뷰
-- [x] `/test-gate`를 thin router로 (Phase A 리팩토링)
+- [x] `/gotcha`를 thin router로 (Phase A 리팩토링)
 - [x] 표면별 시나리오 폴더 (`.claude/test-scenarios/{web,desktop}/`)
-- [ ] Phase B: 공통 config 파일 (`.claude/test-gate.toml`)
+- [ ] Phase B: 공통 config 파일 (`.claude/gotcha.toml`)
 - [ ] Phase C: `/test-api`, `/test-cli` 어댑터
 - [ ] Adversarial test agent (실수 패턴 학습)
 

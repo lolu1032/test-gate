@@ -1,10 +1,12 @@
 ---
-name: test-gate
-description: 테스트 라우터 — 프로젝트의 테스트 표면(web/desktop/review)을 감지하고 적절한 어댑터로 위임
+name: gotcha
+description: Gotcha — AI 에이전트가 놓친 걸 잡는 테스트 라우터. 프로젝트의 테스트 표면(web/desktop/review)을 감지하고 적절한 어댑터로 위임
 user_invocable: true
 ---
 
-# Test Gate (Router)
+# Gotcha (Router)
+
+> Caught you, AI. **Gotcha**의 라우터 스킬 — Claude Code용 AI 에이전트 QA 격리 하네스.
 
 이 스킬은 **라우터**다. 직접 테스트를 실행하지 않는다. 프로젝트에서 테스트 가능한 표면(surface)을 감지하고, 사용자에게 어떤 표면을 테스트할지 묻고, 해당 어댑터 스킬에 위임한다.
 
@@ -65,7 +67,7 @@ fi
 
 감지 결과를 보여준 후 AskUserQuestion:
 
-> **Test Gate** — {프로젝트명}
+> **Gotcha** — {프로젝트명}
 > 커밋: {hash} {message}
 >
 > 감지된 표면:

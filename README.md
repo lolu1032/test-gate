@@ -1,22 +1,22 @@
-# Test Gate
+# Gotcha
 
 > AI agent QA isolation harness for Claude Code — Web + Desktop + Code Review
 
 **[한국어 문서 (Korean)](README.ko.md)**
 
-When AI coding agents test their own work in the same session, they cut corners — marking things "done" when quality is lacking. Test Gate solves this structurally by running tests in a **completely separate session**.
+When AI coding agents test their own work in the same session, they cut corners — marking things "done" when quality is lacking. Gotcha solves this structurally by running tests in a **completely separate session**.
 
 - **Web apps**: `/test-web` — Playwright MCP
 - **Desktop apps**: `/test-desktop` — Tauri MCP (currently)
 - **Code review**: `/test-review` — git diff analysis
-- **Router**: `/test-gate` — detects surfaces and delegates
+- **Router**: `/gotcha` — detects surfaces and delegates
 
 ## How It Works
 
 ```
 [Coding Agent Session]
-    ↓ (you run /test-gate or surface-specific skill)
-[/test-gate router]
+    ↓ (you run /gotcha or surface-specific skill)
+[/gotcha router]
     ├── detects surfaces in project
     └── delegates to adapter:
 [Separate Claude Session — Haiku 4.5]
@@ -31,21 +31,21 @@ When AI coding agents test their own work in the same session, they cut corners 
 
 ## Architecture
 
-Test Gate uses **surface-based** naming, not framework-based:
+Gotcha uses **surface-based** naming, not framework-based:
 
 | Skill | Surface | Implementation |
 |-------|---------|----------------|
 | `/test-web` | Web app (browser) | Playwright MCP |
 | `/test-desktop` | Desktop app | Tauri MCP |
 | `/test-review` | Code diff | Read + Grep + git |
-| `/test-gate` | Router | Detects + delegates |
+| `/gotcha` | Router | Detects + delegates |
 
 This means a Go web server, a Java Spring app, a Next.js app, and a Tauri app can all be tested through the same skills — only the runner adapter differs.
 
 ## Install
 
 ```bash
-git clone https://github.com/lolu1032/test-gate.git
+git clone https://github.com/lolu1032/gotcha.git
 cd test-gate
 ./install.sh
 ```
@@ -65,10 +65,10 @@ cp skills/*/SKILL.md ~/.claude/skills/  # adjust per-folder
 
 ## Usage
 
-### `/test-gate` — Router (recommended)
+### `/gotcha` — Router (recommended)
 
 ```
-/test-gate
+/gotcha
 ```
 
 Detects which surfaces apply to your project, lets you select multiple, delegates to each adapter.
@@ -183,7 +183,7 @@ Skip with `[skip-test]` in commit message.
 
 ## History-Aware Testing
 
-Test Gate reads `HISTORY.md` from previous runs:
+Gotcha reads `HISTORY.md` from previous runs:
 
 - **Regression detection** — previously passing test now fails → `[REGRESSION]`
 - **Fix verification** — commit message has `fix:` → focus on previously failed areas
@@ -205,7 +205,7 @@ Test Gate reads `HISTORY.md` from previous runs:
 └── code-review-prompt.md        # Default review prompt
 
 ~/.claude/skills/                # Skills (slash commands)
-├── test-gate/SKILL.md           # /test-gate (router)
+├── test-gate/SKILL.md           # /gotcha (router)
 ├── test-web/SKILL.md            # /test-web
 ├── test-desktop/SKILL.md        # /test-desktop
 └── test-review/SKILL.md         # /test-review
@@ -238,7 +238,7 @@ Test Gate reads `HISTORY.md` from previous runs:
 
 AI coding agents in the same session have confirmation bias toward their own work. They declare "looks good" prematurely.
 
-Test Gate fixes this with **session isolation**:
+Gotcha fixes this with **session isolation**:
 
 1. **Separate process** — zero shared context with the coding agent
 2. **Read-only** — `--allowedTools` restricts to MCP + Read only
@@ -253,9 +253,9 @@ Implements the [Dual Quality Gates](https://www.sagarmandal.com/2026/03/15/agent
 - [x] Phase 2: `/test-desktop` — Tauri MCP desktop testing
 - [x] Phase 3: History-aware regression detection
 - [x] `/test-review` — code review on git diff
-- [x] `/test-gate` as thin router (Phase A refactor)
+- [x] `/gotcha` as thin router (Phase A refactor)
 - [x] Surface-based scenario folders (`.claude/test-scenarios/{web,desktop}/`)
-- [ ] Phase B: common config file (`.claude/test-gate.toml`)
+- [ ] Phase B: common config file (`.claude/gotcha.toml`)
 - [ ] Phase C: `/test-api`, `/test-cli` adapters
 - [ ] Adversarial test agent (learns mistake patterns)
 

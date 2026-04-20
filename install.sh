@@ -24,22 +24,22 @@ chmod +x "$HARNESS_DIR"/*.sh
 echo "  Harness: $HARNESS_DIR"
 
 # Claude Code skills (4 skills, no more test-tauri alias)
-mkdir -p "$SKILL_DIR/test-web" "$SKILL_DIR/test-desktop" "$SKILL_DIR/test-gate" "$SKILL_DIR/test-review"
+mkdir -p "$SKILL_DIR/test-web" "$SKILL_DIR/test-desktop" "$SKILL_DIR/gotcha" "$SKILL_DIR/test-review"
 cp "$SCRIPT_DIR/skills/test-web/SKILL.md" "$SKILL_DIR/test-web/"
 cp "$SCRIPT_DIR/skills/test-desktop/SKILL.md" "$SKILL_DIR/test-desktop/"
-cp "$SCRIPT_DIR/skills/test-gate/SKILL.md" "$SKILL_DIR/test-gate/"
+cp "$SCRIPT_DIR/skills/gotcha/SKILL.md" "$SKILL_DIR/gotcha/"
 cp "$SCRIPT_DIR/skills/test-review/SKILL.md" "$SKILL_DIR/test-review/"
 # Korean reference docs
 cp "$SCRIPT_DIR/skills/test-web/SKILL.ko.md" "$SKILL_DIR/test-web/" 2>/dev/null || true
 cp "$SCRIPT_DIR/skills/test-desktop/SKILL.ko.md" "$SKILL_DIR/test-desktop/" 2>/dev/null || true
-cp "$SCRIPT_DIR/skills/test-gate/SKILL.ko.md" "$SKILL_DIR/test-gate/" 2>/dev/null || true
+cp "$SCRIPT_DIR/skills/gotcha/SKILL.ko.md" "$SKILL_DIR/gotcha/" 2>/dev/null || true
 cp "$SCRIPT_DIR/skills/test-review/SKILL.ko.md" "$SKILL_DIR/test-review/" 2>/dev/null || true
-echo "  Skills:  /test-gate (router), /test-web, /test-desktop, /test-review"
+echo "  Skills:  /gotcha (router), /test-web, /test-desktop, /test-review"
 
 echo ""
 echo "Done! Commands:"
 echo ""
-echo "  /test-gate       Router — detects surfaces, delegates to adapter"
+echo "  /gotcha       Router — detects surfaces, delegates to adapter"
 echo "  /test-web        Web app testing (Playwright MCP)"
 echo "  /test-desktop    Desktop app testing (Tauri MCP)"
 echo "  /test-review     Code review on git diff"

@@ -1,10 +1,12 @@
 ---
-name: test-gate
-description: Test router — detects testable surfaces (web/desktop/review) in the project and delegates to the appropriate adapter
+name: gotcha
+description: Gotcha — test router that catches what your AI agent missed. Detects testable surfaces (web/desktop/review) and delegates to the appropriate adapter
 user_invocable: true
 ---
 
-# Test Gate (Router)
+# Gotcha (Router)
+
+> Caught you, AI. This is the router skill of **Gotcha** — an AI agent QA isolation harness for Claude Code.
 
 This skill is a **router**. It does not run tests directly. It detects which surfaces (web/desktop/review) are testable in the current project, asks the user which surface(s) to test, and delegates to the corresponding adapter skill.
 
@@ -65,7 +67,7 @@ fi
 
 After detection, AskUserQuestion:
 
-> **Test Gate** — {project name}
+> **Gotcha** — {project name}
 > Commit: {hash} {message}
 >
 > Detected surfaces:
