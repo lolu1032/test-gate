@@ -4,6 +4,16 @@ All notable changes to **Gotcha** are documented here.
 
 ## [Unreleased]
 
+### Added — Multi-agent consensus QA
+- **`/test-jury` skill**: two AI models (Claude Opus 4.7 + Codex GPT) review the same target in parallel, then re-run after seeing each other's reports, then an orchestrator (Claude Opus) synthesizes a final verdict.
+  - Modes: `review` (git diff, safest) and `web` (Playwright MCP, experimental for Codex)
+  - 5-step flow: Round 1 (parallel independent) → Cross-check → Round 2 (peer-aware) → Final synthesis → User
+  - Output: `{project}/.claude/jury-reports/{hash}-jury.md` with all 4 raw reports embedded
+  - Cost: ~5 model calls per run (4 QA + 1 synthesis). Time: 3–6 min.
+  - Use sparingly — for critical PRs, not every commit.
+- New harness files: `run-jury.sh` (orchestrator), `jury-prompt.md` (shared prompt for both agents)
+- Requires Codex CLI (https://github.com/openai/codex)
+
 ### Fixed
 - **Scenario priority**: User scenarios were being de-prioritized by overly strict default rules in `browser-test-prompt.md`. Restructured prompt with clear priority order:
   1. User scenarios (primary source of truth)
@@ -13,7 +23,7 @@ All notable changes to **Gotcha** are documented here.
 - Same restructure applied to `tauri-test-prompt.md`.
 
 ### Added
-- This `CHANGELOG.md` file.
+- `CHANGELOG.md` file.
 
 ---
 

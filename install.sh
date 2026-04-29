@@ -1,11 +1,11 @@
 #!/bin/bash
-# Test Gate installer
+# Gotcha installer
 
 HARNESS_DIR="$HOME/.claude/test-harness"
 SKILL_DIR="$HOME/.claude/skills"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-echo "Installing Test Gate..."
+echo "Installing Gotcha..."
 echo ""
 
 # Harness scripts
@@ -14,35 +14,42 @@ cp "$SCRIPT_DIR/test-now.sh" "$HARNESS_DIR/"
 cp "$SCRIPT_DIR/check-and-run.sh" "$HARNESS_DIR/"
 cp "$SCRIPT_DIR/run-all-tests.sh" "$HARNESS_DIR/"
 cp "$SCRIPT_DIR/run-review.sh" "$HARNESS_DIR/" 2>/dev/null || true
+cp "$SCRIPT_DIR/run-jury.sh" "$HARNESS_DIR/" 2>/dev/null || true
 cp "$SCRIPT_DIR/merge-reports.sh" "$HARNESS_DIR/"
 cp "$SCRIPT_DIR/browser-test-prompt.md" "$HARNESS_DIR/"
 cp "$SCRIPT_DIR/browser-mcp.json" "$HARNESS_DIR/"
 cp "$SCRIPT_DIR/tauri-test-prompt.md" "$HARNESS_DIR/"
 cp "$SCRIPT_DIR/tauri-mcp.json" "$HARNESS_DIR/"
 cp "$SCRIPT_DIR/code-review-prompt.md" "$HARNESS_DIR/" 2>/dev/null || true
+cp "$SCRIPT_DIR/jury-prompt.md" "$HARNESS_DIR/" 2>/dev/null || true
 chmod +x "$HARNESS_DIR"/*.sh
 echo "  Harness: $HARNESS_DIR"
 
-# Claude Code skills (4 skills, no more test-tauri alias)
-mkdir -p "$SKILL_DIR/test-web" "$SKILL_DIR/test-desktop" "$SKILL_DIR/gotcha" "$SKILL_DIR/test-review"
+# Claude Code skills
+mkdir -p "$SKILL_DIR/test-web" "$SKILL_DIR/test-desktop" "$SKILL_DIR/gotcha" "$SKILL_DIR/test-review" "$SKILL_DIR/test-jury"
 cp "$SCRIPT_DIR/skills/test-web/SKILL.md" "$SKILL_DIR/test-web/"
 cp "$SCRIPT_DIR/skills/test-desktop/SKILL.md" "$SKILL_DIR/test-desktop/"
 cp "$SCRIPT_DIR/skills/gotcha/SKILL.md" "$SKILL_DIR/gotcha/"
 cp "$SCRIPT_DIR/skills/test-review/SKILL.md" "$SKILL_DIR/test-review/"
+cp "$SCRIPT_DIR/skills/test-jury/SKILL.md" "$SKILL_DIR/test-jury/"
 # Korean reference docs
 cp "$SCRIPT_DIR/skills/test-web/SKILL.ko.md" "$SKILL_DIR/test-web/" 2>/dev/null || true
 cp "$SCRIPT_DIR/skills/test-desktop/SKILL.ko.md" "$SKILL_DIR/test-desktop/" 2>/dev/null || true
 cp "$SCRIPT_DIR/skills/gotcha/SKILL.ko.md" "$SKILL_DIR/gotcha/" 2>/dev/null || true
 cp "$SCRIPT_DIR/skills/test-review/SKILL.ko.md" "$SKILL_DIR/test-review/" 2>/dev/null || true
-echo "  Skills:  /gotcha (router), /test-web, /test-desktop, /test-review"
+cp "$SCRIPT_DIR/skills/test-jury/SKILL.ko.md" "$SKILL_DIR/test-jury/" 2>/dev/null || true
+echo "  Skills:  /gotcha (router), /test-web, /test-desktop, /test-review, /test-jury"
 
 echo ""
 echo "Done! Commands:"
 echo ""
-echo "  /gotcha       Router — detects surfaces, delegates to adapter"
+echo "  /gotcha          Router — detects surfaces, delegates to adapter"
 echo "  /test-web        Web app testing (Playwright MCP)"
 echo "  /test-desktop    Desktop app testing (Tauri MCP)"
 echo "  /test-review     Code review on git diff"
+echo "  /test-jury       Multi-agent consensus (Claude + Codex, 4 sessions)"
+echo ""
+echo "Note: /test-jury requires Codex CLI (https://github.com/openai/codex)"
 echo ""
 echo "Or from command line:"
 echo "  ~/.claude/test-harness/test-now.sh"

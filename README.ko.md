@@ -1,6 +1,6 @@
 # Gotcha
 
-> Claude Code용 AI 에이전트 QA 격리 하네스 — 웹 + 데스크톱 + 코드 리뷰
+> Claude Code용 AI 에이전트 QA 격리 하네스 — 웹 + 데스크톱 + 코드 리뷰 + 멀티 에이전트 배심원단
 
 **[English](README.md)**
 
@@ -10,6 +10,7 @@ Gotcha는 **완전히 별도의 세션**에서 테스트를 돌려서 이 문제
 - **웹앱**: `/test-web` — Playwright MCP
 - **데스크톱앱**: `/test-desktop` — Tauri MCP (현재)
 - **코드 리뷰**: `/test-review` — git diff 분석
+- **멀티 에이전트 합의**: `/test-jury` — Claude + Codex 병렬 + 크로스체크 + 합성
 - **라우터**: `/gotcha` — 표면 감지 + 위임
 
 ## 동작 흐름
@@ -39,6 +40,7 @@ Gotcha는 **표면(surface) 기반** 명명을 사용합니다 (프레임워크 
 | `/test-web` | 웹앱 (브라우저) | Playwright MCP |
 | `/test-desktop` | 데스크톱 앱 | Tauri MCP |
 | `/test-review` | 코드 diff | Read + Grep + git |
+| `/test-jury` | 중요 리뷰 (합의) | Claude Opus + Codex GPT, 2 라운드 |
 | `/gotcha` | 라우터 | 감지 + 위임 |
 
 이렇게 하면 Go 웹서버, Java Spring 앱, Next.js 앱, Tauri 앱 모두 같은 스킬로 테스트 가능. 어댑터만 다름.

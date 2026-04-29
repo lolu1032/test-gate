@@ -1,6 +1,6 @@
 # Gotcha
 
-> AI agent QA isolation harness for Claude Code — Web + Desktop + Code Review
+> AI agent QA isolation harness for Claude Code — Web + Desktop + Code Review + Multi-agent Jury
 
 **[한국어 문서 (Korean)](README.ko.md)**
 
@@ -9,6 +9,7 @@ When AI coding agents test their own work in the same session, they cut corners 
 - **Web apps**: `/test-web` — Playwright MCP
 - **Desktop apps**: `/test-desktop` — Tauri MCP (currently)
 - **Code review**: `/test-review` — git diff analysis
+- **Multi-agent consensus**: `/test-jury` — Claude + Codex parallel + cross-check + synthesis
 - **Router**: `/gotcha` — detects surfaces and delegates
 
 ## How It Works
@@ -38,6 +39,7 @@ Gotcha uses **surface-based** naming, not framework-based:
 | `/test-web` | Web app (browser) | Playwright MCP |
 | `/test-desktop` | Desktop app | Tauri MCP |
 | `/test-review` | Code diff | Read + Grep + git |
+| `/test-jury` | Critical reviews (consensus) | Claude Opus + Codex GPT, 2 rounds |
 | `/gotcha` | Router | Detects + delegates |
 
 This means a Go web server, a Java Spring app, a Next.js app, and a Tauri app can all be tested through the same skills — only the runner adapter differs.
